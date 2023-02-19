@@ -33,9 +33,12 @@ mongoose.connect("mongodb://localhost:27017/userDB", {
 
 mongoose.set("useCreateIndex", true);
 
+
+
 const userSchema = new mongoose.Schema({
     email: String,
-    password: String
+    password: String,
+    secret: String
 });
 
 userSchema.plugin(passportLocalMongoose);
@@ -64,7 +67,31 @@ app.get("/secrets", function(req,res)
 {
     if(req.isAuthenticated())
     {
-        res.render("secrets");
+        User.findById(req.user.id, function(err, foundUser)
+    {
+        
+        if(err)
+        {
+            console.log(err);
+        }
+        else
+        {
+            if(foundUser.secret)
+            {
+                console.log(foundUser.secret);
+                userSecrets= foundUser.secret;
+                  
+                  res.render("secrets", {userSecrets:userSecrets});
+            }
+            else
+            {
+                const userSecrets=" Jack is my hero";
+               
+                res.render("secrets", {userSecrets:userSecrets});
+            }
+        }
+    });
+        
     }
     else
     {
@@ -121,6 +148,43 @@ app.post("/login", function(req, res)
         }
     })
 
+});
+
+
+app.get("/submit", function(req, res)
+{
+    if(req.isAuthenticated())
+    {
+        res.render("submit");
+    }
+    else
+    {
+        res.redirect("/login");
+    }
+});
+
+
+app.post("/submit", function(req ,res )
+{
+    const submittedSecret =req.body.secret;
+    User.findById(req.user.id, function(err, foundUser)
+    {
+        if(err)
+        {
+            console.log(err);
+        }
+        else
+        {
+            if(foundUser)
+            {
+                   foundUser.secret=submittedSecret; 
+                   foundUser.save(function()
+                   {
+                    res.redirect("/secrets");
+                   });
+            }
+        }
+    });
 });
 
 // Server Listening to port 3000
